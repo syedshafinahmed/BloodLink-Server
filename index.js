@@ -3,6 +3,7 @@ const cors = require("cors");
 const app = express();
 require("dotenv").config();
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
+const stripe = require("stripe")(process.env.STRIPE_SECRET);
 const port = process.env.PORT || 3000;
 
 app.use(express.json());
@@ -25,6 +26,7 @@ async function run() {
     const db = client.db("bloodlink_db");
     const usersCollection = db.collection("users");
     const donationRequestsCollection = db.collection("donationRequests");
+    const fundingsCollection = db.collection("fundings");
 
     // users API
     app.post("/users", async (req, res) => {
@@ -143,6 +145,73 @@ async function run() {
       } catch (error) {
         console.error(error);
         res.status(500).send({ error: "Invalid ID or server error" });
+      }
+    });
+
+    // STRIPE
+    app.post("/create-payment-intent", async (req, res) => {
+      const { amount, userEmail, userName } = req.body;
+    
+      try {
+        const session = await stripe.checkout.sessions.create({
+          payment_method_types: ["card"],
+          line_items: [
+            {
+              price_data: {
+                currency: "bdt",
+                product_data: { name: "Donation Fund" },
+                unit_amount: amount * 100,
+              },
+              quantity: 1,
+            },
+          ],
+          mode: "payment",
+          success_url: `${process.env.SITE_DOMAIN}/fundings-success?session_id={CHECKOUT_SESSION_ID}&email=${encodeURIComponent(
+            userEmail
+          )}&name=${encodeURIComponent(userName)}&amount=${amount}`,
+          cancel_url: `${process.env.SITE_DOMAIN}/fundings-cancel`,
+        });
+    
+        await fundingsCollection.insertOne({
+          userName,
+          userEmail,
+          amount,
+          createdAt: new Date(),
+          stripeSessionId: session.id,
+          paid: false, 
+        });
+    
+        res.send({ url: session.url });
+      } catch (err) {
+        console.error(err);
+        res.status(500).send({ error: "Failed to create payment session" });
+      }
+    });
+    
+
+    // GET all fundings
+    app.get("/fundings", async (req, res) => {
+      try {
+        const fundings = await fundingsCollection
+          .find()
+          .sort({ createdAt: -1 })
+          .toArray();
+        res.send(fundings);
+      } catch (error) {
+        console.error(error);
+        res.status(500).send({ error: "Failed to fetch fundings" });
+      }
+    });
+
+    // Add new funding record
+    app.post("/fundings", async (req, res) => {
+      try {
+        const funding = { ...req.body, createdAt: new Date() };
+        const result = await fundingsCollection.insertOne(funding);
+        res.send(result);
+      } catch (error) {
+        console.error(error);
+        res.status(500).send({ error: "Failed to add funding" });
       }
     });
 
