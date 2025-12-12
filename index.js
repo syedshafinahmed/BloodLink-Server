@@ -2,7 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const app = express();
 require("dotenv").config();
-const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb"); // <-- added ObjectId
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const port = process.env.PORT || 3000;
 
 app.use(express.json());
@@ -43,6 +43,23 @@ async function run() {
       res.send(result);
     });
 
+    // GET all donors
+    app.get("/users", async (req, res) => {
+      try {
+        const { bloodGroup, district, upazila } = req.query;
+        const query = {};
+        if (bloodGroup) query.bloodGroup = bloodGroup;
+        if (district) query.district = district;
+        if (upazila) query.upazila = upazila;
+
+        const result = await usersCollection.find(query).toArray();
+        res.send(result);
+      } catch (err) {
+        console.error(err);
+        res.status(500).send({ error: "Failed to fetch users" });
+      }
+    });
+
     // CREATE a donation request
     app.post("/donation-requests", async (req, res) => {
       const requestData = req.body;
@@ -77,7 +94,7 @@ async function run() {
       try {
         const id = req.params.id;
         const result = await donationRequestsCollection.findOne({
-          _id: new ObjectId(id), // <-- ensure ObjectId
+          _id: new ObjectId(id),
         });
         if (!result) {
           return res.status(404).send({ error: "Donation request not found" });
@@ -98,7 +115,7 @@ async function run() {
 
         const result = await donationRequestsCollection.updateOne(
           { _id: new ObjectId(id) },
-          { $set: updatedData } // <-- now updates all fields sent in request
+          { $set: updatedData }
         );
 
         if (result.matchedCount === 0) {
