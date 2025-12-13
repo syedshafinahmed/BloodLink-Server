@@ -38,24 +38,64 @@ async function run() {
     app.put("/users/:email", async (req, res) => {
       const email = req.params.email;
       const updatedData = req.body;
-      const result = await usersCollection.updateOne(
-        { email: email },
-        { $set: updatedData }
-      );
-      res.send(result);
+      await usersCollection.updateOne({ email }, { $set: updatedData });
+      const updatedUser = await usersCollection.findOne({ email });
+      res.send(updatedUser);
     });
 
+    // update user
+    // app.put("/users/:email", async (req, res) => {
+    //   const email = req.params.email;
+    //   const updatedData = req.body;
+    //   const result = await usersCollection.updateOne(
+    //     { email: email },
+    //     { $set: updatedData }
+    //   );
+    //   res.send(result);
+    // });
+
+    // get user by email
+    // app.get("/users", async (req, res) => {
+    //   try {
+    //     const { email } = req.query;
+    //     const query = email ? { email } : {};
+    //     const users = await usersCollection.find(query).toArray();
+    //     res.send(users);
+    //   } catch (err) {
+    //     console.error(err);
+    //     res.status(500).send({ error: "Failed to fetch users" });
+    //   }
+    // });
+
     // GET all donors
+    // app.get("/users", async (req, res) => {
+    //   try {
+    //     const { bloodGroup, district, upazila } = req.query;
+    //     const query = {};
+    //     if (bloodGroup) query.bloodGroup = bloodGroup;
+    //     if (district) query.district = district;
+    //     if (upazila) query.upazila = upazila;
+
+    //     const result = await usersCollection.find(query).toArray();
+    //     res.send(result);
+    //   } catch (err) {
+    //     console.error(err);
+    //     res.status(500).send({ error: "Failed to fetch users" });
+    //   }
+    // });
+
+    // GET users with (email, bloodGroup, district, upazila)
     app.get("/users", async (req, res) => {
       try {
-        const { bloodGroup, district, upazila } = req.query;
+        const { email, bloodGroup, district, upazila } = req.query;
         const query = {};
+        if (email) query.email = email;
         if (bloodGroup) query.bloodGroup = bloodGroup;
         if (district) query.district = district;
         if (upazila) query.upazila = upazila;
 
-        const result = await usersCollection.find(query).toArray();
-        res.send(result);
+        const users = await usersCollection.find(query).toArray();
+        res.send(users);
       } catch (err) {
         console.error(err);
         res.status(500).send({ error: "Failed to fetch users" });
@@ -151,7 +191,7 @@ async function run() {
     // STRIPE
     app.post("/create-payment-intent", async (req, res) => {
       const { amount, userEmail, userName } = req.body;
-    
+
       try {
         const session = await stripe.checkout.sessions.create({
           payment_method_types: ["card"],
@@ -166,28 +206,29 @@ async function run() {
             },
           ],
           mode: "payment",
-          success_url: `${process.env.SITE_DOMAIN}/fundings-success?session_id={CHECKOUT_SESSION_ID}&email=${encodeURIComponent(
+          success_url: `${
+            process.env.SITE_DOMAIN
+          }/fundings-success?session_id={CHECKOUT_SESSION_ID}&email=${encodeURIComponent(
             userEmail
           )}&name=${encodeURIComponent(userName)}&amount=${amount}`,
           cancel_url: `${process.env.SITE_DOMAIN}/fundings-cancel`,
         });
-    
+
         await fundingsCollection.insertOne({
           userName,
           userEmail,
           amount,
           createdAt: new Date(),
           stripeSessionId: session.id,
-          paid: false, 
+          paid: false,
         });
-    
+
         res.send({ url: session.url });
       } catch (err) {
         console.error(err);
         res.status(500).send({ error: "Failed to create payment session" });
       }
     });
-    
 
     // GET all fundings
     app.get("/fundings", async (req, res) => {
