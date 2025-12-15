@@ -68,47 +68,6 @@ async function run() {
       res.send(updatedUser);
     });
 
-    // update user
-    // app.put("/users/:email", async (req, res) => {
-    //   const email = req.params.email;
-    //   const updatedData = req.body;
-    //   const result = await usersCollection.updateOne(
-    //     { email: email },
-    //     { $set: updatedData }
-    //   );
-    //   res.send(result);
-    // });
-
-    // get user by email
-    // app.get("/users", async (req, res) => {
-    //   try {
-    //     const { email } = req.query;
-    //     const query = email ? { email } : {};
-    //     const users = await usersCollection.find(query).toArray();
-    //     res.send(users);
-    //   } catch (err) {
-    //     console.error(err);
-    //     res.status(500).send({ error: "Failed to fetch users" });
-    //   }
-    // });
-
-    // GET all donors
-    // app.get("/users", async (req, res) => {
-    //   try {
-    //     const { bloodGroup, district, upazila } = req.query;
-    //     const query = {};
-    //     if (bloodGroup) query.bloodGroup = bloodGroup;
-    //     if (district) query.district = district;
-    //     if (upazila) query.upazila = upazila;
-
-    //     const result = await usersCollection.find(query).toArray();
-    //     res.send(result);
-    //   } catch (err) {
-    //     console.error(err);
-    //     res.status(500).send({ error: "Failed to fetch users" });
-    //   }
-    // });
-
     // GET users with (email, bloodGroup, district, upazila)
     app.get("/users", verifyFirebaseToken, async (req, res) => {
       try {
@@ -205,32 +164,6 @@ async function run() {
         }
       }
     );
-
-    // app.patch("/donation-requests/:id", async (req, res) => {
-    //   try {
-    //     const id = req.params.id;
-    //     const { donationStatus } = req.body;
-
-    //     const allowedStatuses = ["pending", "inprogress", "done", "canceled"];
-
-    //     if (!allowedStatuses.includes(donationStatus)) {
-    //       return res.status(400).send({ error: "Invalid status value" });
-    //     }
-
-    //     const result = await donationRequestsCollection.updateOne(
-    //       { _id: new ObjectId(id) },
-    //       { $set: { donationStatus } }
-    //     );
-
-    //     if (result.matchedCount === 0) {
-    //       return res.status(404).send({ error: "Request not found" });
-    //     }
-
-    //     res.send({ message: "Status updated successfully" });
-    //   } catch (error) {
-    //     res.status(500).send({ error: "Server error" });
-    //   }
-    // });
 
     // DELETE donation request
     app.delete(
