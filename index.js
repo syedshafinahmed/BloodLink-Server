@@ -25,6 +25,25 @@ const client = new MongoClient(uri, {
   },
 });
 
+const verifyFirebaseToken = async (req, res, next) => {
+  try {
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).send({ error: "Unauthorized access" });
+    }
+
+    const token = authHeader.split(" ")[1];
+    const decodedUser = await admin.auth().verifyIdToken(token);
+
+    req.user = decodedUser; 
+    next();
+  } catch (error) {
+    console.error("Auth Error:", error);
+    res.status(401).send({ error: "Unauthorized access" });
+  }
+};
+
 async function run() {
   try {
     await client.connect();
