@@ -171,6 +171,32 @@ async function run() {
       }
     });
 
+    // app.patch("/donation-requests/:id", async (req, res) => {
+    //   try {
+    //     const id = req.params.id;
+    //     const { donationStatus } = req.body;
+
+    //     const allowedStatuses = ["pending", "inprogress", "done", "canceled"];
+
+    //     if (!allowedStatuses.includes(donationStatus)) {
+    //       return res.status(400).send({ error: "Invalid status value" });
+    //     }
+
+    //     const result = await donationRequestsCollection.updateOne(
+    //       { _id: new ObjectId(id) },
+    //       { $set: { donationStatus } }
+    //     );
+
+    //     if (result.matchedCount === 0) {
+    //       return res.status(404).send({ error: "Request not found" });
+    //     }
+
+    //     res.send({ message: "Status updated successfully" });
+    //   } catch (error) {
+    //     res.status(500).send({ error: "Server error" });
+    //   }
+    // });
+
     // DELETE donation request
     app.delete("/donation-requests/:id", async (req, res) => {
       try {
@@ -185,6 +211,30 @@ async function run() {
       } catch (error) {
         console.error(error);
         res.status(500).send({ error: "Invalid ID or server error" });
+      }
+    });
+
+    // GET donation requests by status
+    app.get("/donation-requests/status/:status", async (req, res) => {
+      try {
+        const status = req.params.status.toLowerCase();
+
+        const allowedStatuses = ["pending", "inprogress", "done", "canceled"];
+        let query = {};
+
+        if (status !== "all" && allowedStatuses.includes(status)) {
+          query.donationStatus = status;
+        }
+
+        const result = await donationRequestsCollection
+          .find(query)
+          .sort({ createdAt: -1 })
+          .toArray();
+
+        res.send(result);
+      } catch (err) {
+        console.error(err);
+        res.status(500).send({ error: "Failed to fetch donation requests" });
       }
     });
 
