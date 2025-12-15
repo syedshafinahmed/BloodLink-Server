@@ -46,7 +46,7 @@ const verifyFirebaseToken = async (req, res, next) => {
 
 async function run() {
   try {
-    await client.connect();
+    // await client.connect();
 
     const db = client.db("bloodlink_db");
     const usersCollection = db.collection("users");
@@ -69,7 +69,7 @@ async function run() {
     });
 
     // GET users with (email, bloodGroup, district, upazila)
-    app.get("/users", verifyFirebaseToken, async (req, res) => {
+    app.get("/users", async (req, res) => {
       try {
         const { email, bloodGroup, district, upazila } = req.query;
         const query = {};
@@ -120,7 +120,7 @@ async function run() {
     );
 
     // GET single donation request
-    app.get("/donation-requests/:id", verifyFirebaseToken, async (req, res) => {
+    app.get("/donation-requests/:id", async (req, res) => {
       try {
         const id = req.params.id;
         const result = await donationRequestsCollection.findOne({
@@ -189,32 +189,28 @@ async function run() {
     );
 
     // GET donation requests by status
-    app.get(
-      "/donation-requests/status/:status",
-      verifyFirebaseToken,
-      async (req, res) => {
-        try {
-          const status = req.params.status.toLowerCase();
+    app.get("/donation-requests/status/:status", async (req, res) => {
+      try {
+        const status = req.params.status.toLowerCase();
 
-          const allowedStatuses = ["pending", "inprogress", "done", "canceled"];
-          let query = {};
+        const allowedStatuses = ["pending", "inprogress", "done", "canceled"];
+        let query = {};
 
-          if (status !== "all" && allowedStatuses.includes(status)) {
-            query.donationStatus = status;
-          }
-
-          const result = await donationRequestsCollection
-            .find(query)
-            .sort({ createdAt: -1 })
-            .toArray();
-
-          res.send(result);
-        } catch (err) {
-          console.error(err);
-          res.status(500).send({ error: "Failed to fetch donation requests" });
+        if (status !== "all" && allowedStatuses.includes(status)) {
+          query.donationStatus = status;
         }
+
+        const result = await donationRequestsCollection
+          .find(query)
+          .sort({ createdAt: -1 })
+          .toArray();
+
+        res.send(result);
+      } catch (err) {
+        console.error(err);
+        res.status(500).send({ error: "Failed to fetch donation requests" });
       }
-    );
+    });
 
     // STRIPE
     app.post("/create-payment-intent", async (req, res) => {
@@ -284,7 +280,7 @@ async function run() {
       }
     });
 
-    await client.db("admin").command({ ping: 1 });
+    // await client.db("admin").command({ ping: 1 });
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
     );
